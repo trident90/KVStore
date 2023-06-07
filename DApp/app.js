@@ -24,6 +24,15 @@ const web3 = new Web3(provider);
 const contract = new web3.eth.Contract(contractABI, contractAddress);
 const wallet = new ethers.Wallet(privateKey, provider);
 
+var txCount = 0;
+
+async function getNonce() {
+  txCount = await web3.eth.getTransactionCount(wallet.address);
+  console.log("txCount:", txCount);
+}
+
+getNonce();
+
 app.use(bodyParser.json());
 
 // Example API endpoint to get a value from the contract
@@ -40,23 +49,24 @@ app.get('/get/:key', async (req, res) => {
 // Example API endpoint to set a value in the contract
 app.post('/set', async (req, res) => {
   const { key, value } = req.body;
-  console.log('key:', key, ', value:', value);
-  console.log('from:', wallet.address);
+  //console.log('key:', key, ', value:', value);
+  //console.log('from:', wallet.address);
   const setFunc = contract.methods.set(key, value);
-  const txCount = await web3.eth.getTransactionCount(wallet.address);
+  //const txCount = await web3.eth.getTransactionCount(wallet.address);
   console.log('txCount:', txCount);
   const txObj = {
-      nonce: web3.utils.toHex(txCount),
+      nonce: web3.utils.toHex(txCount++),
       from: wallet.address,
       to: contractAddress,
       data: setFunc.encodeABI(),
-      gas: await setFunc.estimateGas(), 
+      //gas: await setFunc.estimateGas(), 
+      gas: 50000, 
       gasPrice: web3.utils.toHex(web3.utils.toWei('80', 'gwei'))
   };
   const signedTx = await web3.eth.accounts.signTransaction(txObj, privateKey);
   web3.eth.sendSignedTransaction(signedTx.rawTransaction)
     .then(transaction => {
-      console.log('Transaction Hash:', transaction.transactionHash);
+      //console.log('Transaction Hash:', transaction.transactionHash);
       res.json({ key, value });
     })
     .catch(error => {
